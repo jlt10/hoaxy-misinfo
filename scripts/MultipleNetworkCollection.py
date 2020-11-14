@@ -37,27 +37,26 @@ all_network_df, all_network_map = collect_tweet_network(article_ids)
 # extract date
 all_network_df["date"] = all_network_df.created_at.apply(lambda dt: dt.date)
 
-dates = sorted(all_network_df['date'].to_list())
-print(dates[len(dates)//2])
-
 
 ## plotting
 # type of tweet
 grouped_all_network = all_network_df.groupby(["date", "type"]).count()["id"].unstack("type").fillna(0)
 grouped_all_network.plot.bar(title="Tweet Volume over Time by Type", figsize=(12,8), stacked=True)
-# plt.savefig('tweet_vol_by_type.pdf')
+plt.savefig('../plots/tweet_vol_by_type.pdf')
 
 # domain
 grouped_all_network = all_network_df.groupby(["date", "domain"]).count()["id"].unstack("domain").fillna(0)
 grouped_all_network.plot.bar(title="Tweet Volume over Time by Domain", figsize=(12,8), stacked=True)
-# plt.savefig('tweet_vol_by_domain.pdf')
+plt.savefig('../plots/tweet_vol_by_domain.pdf')
 
 # closer look at middle peak
+# dates = sorted(all_network_df['date'].to_list())
+# print(dates[len(dates)//2])
 middle_peak = all_network_df.loc[all_network_df['created_at'] > '20200730']
 middle_peak = middle_peak.loc[middle_peak['created_at'] < '20200820']
 grouped_middle_peak = middle_peak.groupby(["date", "type"]).count()["id"].unstack("type").fillna(0)
 grouped_middle_peak.plot.bar(title="Tweet Volume over Time by Type (Middle Peak)", figsize=(12,8), stacked=True)
-plt.savefig('middle_peak_by_type.pdf')
+plt.savefig('../plots/middle_peak_by_type.pdf')
 
 
 # scatter plot
