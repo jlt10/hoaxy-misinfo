@@ -8,7 +8,8 @@ from scipy.signal import find_peaks
 data_path = "../data"
 features = {
     "num_peaks": 0,
-    "lifetime": 0,
+    "active_days": 0,
+    "lifespan": 0,
 }
 
 def get_relevant_article_ids():
@@ -64,11 +65,12 @@ def get_days_active(date_range, signal_df):
 
 def get_signal_peaks(signal_df, min_peak=50):
     x = signal_df.tweet_count.to_numpy()
-    peaks, _ = find_peaks(x, height=min_peak)
+    peaks, _ = find_peaks(x, height=min_peak, distance=7)
     return peaks
 
 def get_peak_features(article_ids, article_df, tweet_df_map):
     # Maps used to create new columns later.
+    all_peaks = []
     dr_col_map = {}
     active_col_map = {}
     npeaks_col_map = {}
@@ -82,17 +84,25 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
         dr_col_map[aid] = len(dr)
         active_col_map[aid] = get_days_active(dr, signal_df)
         npeaks_col_map[aid] = len(peaks)
-    
+        all_peaks.extend([(aid, dr[p]) for p in peaks])
+    # Save the collection of peaks found.
+    all_peaks = np.transpose(all_peaks)
+    pd.DataFrame({"aid": all_peaks[0], "peak_date": all_peaks[1]}).to_csv(f"{data_path}/article_peaks.csv")
+    # Save the articles 
     article_df["lifespan"] = article_df['id'].map(dr_col_map)
     article_df["active_days"] = article_df['id'].map(active_col_map)
     article_df["num_peaks"] = article_df['id'].map(npeaks_col_map)
-    article_df.to_csv(f"{data_path}/article_features.csv")
 
+    
 def main():
     article_ids = get_relevant_article_ids()
     article_df = get_filtered_article_dataframe(article_ids)
     tweet_df_map = get_all_article_tweet_dfs(article_ids)
+    # Add new features to the article DF
     get_peak_features(article_ids, article_df, tweet_df_map)
+    # Save the new features.
+    article_df.to_csv(f"{data_path}/article_features.csv")
+
 
 if __name__ == "__main__":
     main()

@@ -4,7 +4,7 @@ import requests
 article_ids = []
 with open(f"../data/article_ids.csv", "r") as f:
     for aid in f.readlines():
-        article_ids.append(aid)
+        article_ids.append(aid.rstrip())
 
 # Get network of a tweet
 
