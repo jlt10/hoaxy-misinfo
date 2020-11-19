@@ -4,7 +4,7 @@ import requests
 article_ids = []
 with open(f"../data/article_ids.csv", "r") as f:
     for aid in f.readlines():
-        article_ids.append(aid)
+        article_ids.append(int(aid.rstrip()))
 
 # Get network of a tweet
 
@@ -18,6 +18,7 @@ headers = {
 
 def fetch_article_tweets(article_id):
     querystring = {"ids": str([article_id])}
+    print(querystring)
     response = requests.request(
         "GET", url+"/tweets", headers=headers, params=querystring)
     return json.loads(response.text)
@@ -140,8 +141,10 @@ def save_network_csv_data(article_id, data_path, network):
 
 def save_article_hoaxy_data(article_id, data_path):
     # Fetch tweets and network from API
+    # print(article_id, fetch_article_tweets(article_id))
     raw_tweets = fetch_article_tweets(article_id)["tweets"]
     raw_network = fetch_article_network(article_id)["edges"]
+    # print(raw_tweets, raw_network)
     # Parse raw data into users, networks, and tweets
     users, network, tweets = parse_raw_data(raw_network, raw_tweets)
     # Save all the data
