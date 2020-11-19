@@ -4,7 +4,11 @@ import requests
 article_ids = []
 with open(f"../data/article_ids.csv", "r") as f:
     for aid in f.readlines():
+<<<<<<< HEAD
         article_ids.append(int(aid.rstrip()))
+=======
+        article_ids.append(aid.rstrip())
+>>>>>>> 51009c9691137e30c5c8e3ac7c3557182b52e35d
 
 # Get network of a tweet
 
