@@ -25,7 +25,18 @@ def collect_tweet_network(article_ids):
         tweet_df_map[aid]['created_at']= pd.to_datetime(tweet_df_map[aid]['created_at'])
         
         # domain url
-        tweet_df_map[aid]['domain'] = all_article_info.loc[all_article_info['id'] == int(aid)]['domain'].values[0]
+        gotten_domain = all_article_info.loc[all_article_info['id'] == int(aid)]['domain'].values
+        if len(gotten_domain) > 0:
+            tweet_df_map[aid]['domain'] = gotten_domain[0]
+        else:
+            tweet_df_map[aid]['domain'] = ''
+
+        # site type
+        gotten_site_type = all_article_info.loc[all_article_info['id'] == int(aid)]['site_type'].values
+        if len(gotten_site_type) > 0:
+            tweet_df_map[aid]['site_type'] = gotten_site_type[0]
+        else:
+            tweet_df_map[aid]['site_type'] = 'na'
        
     concat_df = pd.concat(tweet_df_map.values())
     return concat_df, tweet_df_map
