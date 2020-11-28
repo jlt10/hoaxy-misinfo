@@ -2,7 +2,7 @@ import json
 import requests
 
 article_ids = []
-with open(f"../data/article_ids.csv", "r") as f:
+with open(f"../data/article_ids_2020_first_half.csv", "r") as f:
     for aid in f.readlines():
         article_ids.append(int(aid.rstrip()))
 
@@ -155,5 +155,5 @@ def save_article_hoaxy_data(article_id, data_path):
     save_network_csv_data(article_id, data_path, network)
 
 
-for aid in article_ids: 
-	save_article_hoaxy_data(aid, network_data_path)
+for aid in article_ids:
+    save_article_hoaxy_data(aid, network_data_path)
