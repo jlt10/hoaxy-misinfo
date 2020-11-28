@@ -48,25 +48,7 @@ all_network_df, all_network_map = collect_tweet_network(article_ids)
 # extract date
 all_network_df["date"] = all_network_df.created_at.apply(lambda dt: dt.date)
 
-claims = all_network_df.loc[all_network_df['site_type'] == 'claim']
-fact_checkings = all_network_df.loc[all_network_df['site_type'] == 'fact_checking']
-
-# print(all_network_df.columns)
-
-
 # ## plotting
-grouped_all_network = claims.groupby(["date"]).count()["id"]
-grouped_all_network.plot(figsize=(12,8), stacked=True)
-# plt.savefig('../plots/tweet_vol_by_type_claims.pdf')
-
-grouped_all_network = fact_checkings.groupby(["date"]).count()["id"]
-grouped_all_network.plot(figsize=(12,8), stacked=True)
-
-plt.savefig('../plots/tweet_vol_by_type_overlay.pdf')
-
-# all_network_df.plot.
-
-
 # type of tweet
 grouped_all_network = all_network_df.groupby(["date", "type"]).count()["id"].unstack("type").fillna(0)
 grouped_all_network.plot.bar(title="Tweet Volume over Time by Type", figsize=(12,8), stacked=True)
