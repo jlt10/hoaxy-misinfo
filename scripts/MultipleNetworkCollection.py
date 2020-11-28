@@ -6,7 +6,7 @@ from datetime import date
 article_ids = []
 with open(f"../data/article_ids.csv", "r") as f:
     for aid in f.readlines():
-        article_ids.append(aid.rstrip('\n'))
+        article_ids.append(int(aid.rstrip('\n')))
         
 # read in all article info for later reference
 all_article_info = pd.read_csv('../data/all_articles.csv')
