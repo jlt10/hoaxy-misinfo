@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 import matplotlib.pyplot as plt
 from dateutil.relativedelta import relativedelta
 from scipy.signal import find_peaks
+import pytz
 
 data_path = "../data"
 features = {
@@ -25,6 +26,11 @@ def get_filtered_article_dataframe(article_ids):
     article_df = pd.read_csv(f"{data_path}/all_articles.csv")
     article_df.set_index("id")
     article_df['date_published'] = pd.to_datetime(article_df['date_published'])
+    # determine which half of 2020
+    article_df['which_half'] = article_df['date_published']
+    midway_date = pytz.utc.localize(datetime(2020, 7, 2))
+    article_df.loc[article_df['date_published'] < midway_date, 'which_half'] = 1
+    article_df.loc[article_df['date_published'] >= midway_date, 'which_half'] = 2
     article_df = article_df[article_df["id"].isin(article_ids)]
     for feature, default in features.items():
         article_df[feature] = default
