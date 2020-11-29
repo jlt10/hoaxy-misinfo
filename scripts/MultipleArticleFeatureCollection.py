@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 import matplotlib.pyplot as plt
 from dateutil.relativedelta import relativedelta
 from scipy.signal import find_peaks
+import pytz
 
 data_path = "../data"
 features = {
@@ -25,6 +26,11 @@ def get_filtered_article_dataframe(article_ids):
     article_df = pd.read_csv(f"{data_path}/all_articles.csv")
     article_df.set_index("id")
     article_df['date_published'] = pd.to_datetime(article_df['date_published'])
+    # determine which half of 2020
+    article_df['which_half'] = article_df['date_published']
+    midway_date = pytz.utc.localize(datetime(2020, 7, 2))
+    article_df.loc[article_df['date_published'] < midway_date, 'which_half'] = 1
+    article_df.loc[article_df['date_published'] >= midway_date, 'which_half'] = 2
     article_df = article_df[article_df["id"].isin(article_ids)]
     for feature, default in features.items():
         article_df[feature] = default
@@ -54,7 +60,8 @@ def get_all_article_tweet_dfs(article_ids):
 
 
 def get_date_range(tweet_df):
-    min_date = tweet_df.created_at.min().date()
+    # Include date before the minimum date to catch any initial peaks.
+    min_date = tweet_df.created_at.min().date() + timedelta(days=-1)
     max_date = tweet_df.created_at.max().date()
     date_range = np.array([min_date + timedelta(days=x) for x in range((max_date - min_date).days)])
     return date_range
@@ -72,8 +79,7 @@ def get_days_active(date_range, signal_df):
     return len(date_range) - inactive_days
 
 
-def get_signal_peaks(aid, signal_df, min_peak=50):
-    x = signal_df.tweet_count.to_numpy()
+def get_signal_peaks(aid, x, min_peak=50):
     peaks, _ = find_peaks(x, height=min_peak, distance=7)
     save_signal_graph(aid, x, peaks)
     return peaks
@@ -84,8 +90,8 @@ def save_signal_graph(aid, x, peaks):
     plt.plot(peaks, x[peaks], "x")
     plt.plot(np.zeros_like(x), "--", color="gray")
     plt.title(aid)
-    plt.show()
-    # plt.savefig(f"{data_path}/peak_graphs/{aid}_peaks.png")
+    plt.savefig(f"{data_path}/peak_graphs/{aid}_peaks.png")
+    plt.clf()
 
 
 def get_peak_features(article_ids, article_df, tweet_df_map):
@@ -99,15 +105,20 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
         tdf = tweet_df_map[aid]
         dr = get_date_range(tdf)
         signal_df = get_signal_dataframe(tdf, dr)
-        peaks = get_signal_peaks(aid, signal_df)
+        x = signal_df.tweet_count.to_numpy()
+        peaks = get_signal_peaks(aid, x)
         # Record the relevant features
-        dr_col_map[aid] = len(dr)
+        dr_col_map[aid] = len(dr) - 1   # Subtract extra day
         active_col_map[aid] = get_days_active(dr, signal_df)
         npeaks_col_map[aid] = len(peaks)
-        all_peaks.extend([(aid, dr[p]) for p in peaks])
+        all_peaks.extend([(aid, dr[p], x[p]) for p in peaks])
     # Save the collection of peaks found.
     all_peaks = np.transpose(all_peaks)
-    pd.DataFrame({"aid": all_peaks[0], "peak_date": all_peaks[1]}).to_csv(f"{data_path}/article_peaks.csv")
+    pd.DataFrame({
+        "aid": all_peaks[0],
+        "peak_date": all_peaks[1],
+        "peak_height": all_peaks[2],
+    }).to_csv(f"{data_path}/article_peaks.csv")
     # Save the articles 
     article_df["lifespan"] = article_df['id'].map(dr_col_map)
     article_df["active_days"] = article_df['id'].map(active_col_map)

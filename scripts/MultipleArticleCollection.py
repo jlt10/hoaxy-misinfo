@@ -155,5 +155,5 @@ def save_article_hoaxy_data(article_id, data_path):
     save_network_csv_data(article_id, data_path, network)
 
 
-for aid in article_ids: 
-	save_article_hoaxy_data(aid, network_data_path)
+for aid in article_ids:
+    save_article_hoaxy_data(aid, network_data_path)
