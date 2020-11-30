@@ -16,7 +16,7 @@ features = {
 
 def get_relevant_article_ids():
     article_ids = []
-    with open(f"{data_path}/article_ids.csv", "r") as f:
+    with open(f"{data_path}/2020_article_ids.csv", "r") as f:
         for aid in f.readlines():
             article_ids.append(int(aid.rstrip()))
     return article_ids
@@ -79,9 +79,10 @@ def get_days_active(date_range, signal_df):
     return len(date_range) - inactive_days
 
 
-def get_signal_peaks(aid, x, min_peak=50):
+def get_signal_peaks(aid, x, min_peak=50, graph=True):
     peaks, _ = find_peaks(x, height=min_peak, distance=7)
-    save_signal_graph(aid, x, peaks)
+    if graph:
+        save_signal_graph(aid, x, peaks)
     return peaks
 
 
@@ -106,7 +107,7 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
         dr = get_date_range(tdf)
         signal_df = get_signal_dataframe(tdf, dr)
         x = signal_df.tweet_count.to_numpy()
-        peaks = get_signal_peaks(aid, x)
+        peaks = get_signal_peaks(aid, x, graph=False)
         # Record the relevant features
         dr_col_map[aid] = len(dr) - 1   # Subtract extra day
         active_col_map[aid] = get_days_active(dr, signal_df)
