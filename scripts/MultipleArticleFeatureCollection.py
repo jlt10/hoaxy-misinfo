@@ -23,7 +23,8 @@ def get_relevant_article_ids():
 
 
 def get_filtered_article_dataframe(article_ids):
-    article_df = pd.read_csv(f"{data_path}/all_articles.csv")
+    article_df = pd.read_csv(f"{data_path}/2020_articles.csv")
+    print(article_df.shape)
     article_df.set_index("id")
     article_df['date_published'] = pd.to_datetime(article_df['date_published'])
     # determine which half of 2020
@@ -131,10 +132,10 @@ def main():
     article_ids = get_relevant_article_ids()
     article_df = get_filtered_article_dataframe(article_ids)
     tweet_df_map = get_all_article_tweet_dfs(article_ids)
-    # Add new features to the article DF
-    get_peak_features(article_ids, article_df, tweet_df_map)
-    # Save the new features.
-    article_df.to_csv(f"{data_path}/article_features.csv")
+    # # Add new features to the article DF
+    # get_peak_features(article_ids, article_df, tweet_df_map)
+    # # Save the new features.
+    # article_df.to_csv(f"{data_path}/article_features.csv")
 
 
 if __name__ == "__main__":
