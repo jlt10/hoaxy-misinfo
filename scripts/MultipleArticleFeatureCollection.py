@@ -95,12 +95,23 @@ def save_signal_graph(aid, x, peaks):
     plt.clf()
 
 
+def get_avg_peak_distance(peaks):
+    n = len(peaks)
+    if n < 2:
+        return 0
+    dist = 0
+    for i in range(n - 1):
+        dist += (peaks[i + 1] - peaks[i]) / (n - 1)
+    return dist
+
+
 def get_peak_features(article_ids, article_df, tweet_df_map):
     # Maps used to create new columns later.
     all_peaks = []
     dr_col_map = {}
     active_col_map = {}
     npeaks_col_map = {}
+    peak_dist_col_map = {}
     for aid in article_ids:
         tdf = tweet_df_map[aid]
         dr = get_date_range(tdf)
@@ -111,6 +122,7 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
         dr_col_map[aid] = len(dr) - 1   # Subtract extra day
         active_col_map[aid] = get_days_active(dr, signal_df)
         npeaks_col_map[aid] = len(peaks)
+        peak_dist_col_map[aid] = get_avg_peak_distance(peaks)
         all_peaks.extend([(aid, dr[p], x[p]) for p in peaks])
     # Save the collection of peaks found.
     all_peaks = np.transpose(all_peaks)
@@ -124,6 +136,7 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
     article_df["active_days"] = article_df['id'].map(active_col_map)
     article_df["num_peaks"] = article_df['id'].map(npeaks_col_map)
     article_df["active_ratio"] = article_df["active_days"] / article_df["lifespan"]
+    article_df["avg_peak_dist"] = article_df['id'].map(peak_dist_col_map)
 
 
 def main():
