@@ -24,7 +24,6 @@ def get_relevant_article_ids():
 
 def get_filtered_article_dataframe(article_ids):
     article_df = pd.read_csv(f"{data_path}/2020_articles.csv")
-    print(article_df.shape)
     article_df.set_index("id")
     article_df['date_published'] = pd.to_datetime(article_df['date_published'])
     # determine which half of 2020
@@ -102,13 +101,12 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
     dr_col_map = {}
     active_col_map = {}
     npeaks_col_map = {}
-
     for aid in article_ids:
         tdf = tweet_df_map[aid]
         dr = get_date_range(tdf)
         signal_df = get_signal_dataframe(tdf, dr)
         x = signal_df.tweet_count.to_numpy()
-        peaks = get_signal_peaks(aid, x, graph=False)
+        peaks = get_signal_peaks(aid, x, graph=True)
         # Record the relevant features
         dr_col_map[aid] = len(dr) - 1   # Subtract extra day
         active_col_map[aid] = get_days_active(dr, signal_df)
@@ -132,10 +130,10 @@ def main():
     article_ids = get_relevant_article_ids()
     article_df = get_filtered_article_dataframe(article_ids)
     tweet_df_map = get_all_article_tweet_dfs(article_ids)
-    # # Add new features to the article DF
-    # get_peak_features(article_ids, article_df, tweet_df_map)
-    # # Save the new features.
-    # article_df.to_csv(f"{data_path}/article_features.csv")
+    # Add new features to the article DF
+    get_peak_features(article_ids, article_df, tweet_df_map)
+    # Save the new features.
+    article_df.to_csv(f"{data_path}/article_features.csv")
 
 
 if __name__ == "__main__":
