@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from dateutil.relativedelta import relativedelta
 from scipy.signal import find_peaks
 import pytz
+from collections import defaultdict
 
 data_path = "../data"
 features = {
@@ -85,6 +86,42 @@ def get_signal_peaks(aid, x, min_peak=50, graph=True):
         save_signal_graph(aid, x, peaks)
     return peaks
 
+# time_slice: amount of time between samples 
+def get_exp_rates(aid, peaks, x, time_slice=7):
+    RISE, DECAY = 0, 1
+    x_data = np.array(range(time_slice+1))
+    riseRates = []
+    decayRates = []
+    for peak_index in peaks:
+        rises, decays = [], [] 
+        if peak_index - time_slice >= 0:
+            ## Add small epsilon.
+            y_data = np.array(x[peak_index-time_slice:peak_index+1]) + 1e-7
+            log_y_data = np.log(y_data)
+            
+            # y = C * e^(rt) => C = e^curve_fit[1], r = e^curve_fit[0]
+            curve_fit = np.exp(np.polyfit(x_data, log_y_data, 1))
+            rise_ = curve_fit[0]
+            riseRates.append(rise_)
+            
+        if peak_index + time_slice+1 < len(x):
+            y_data = np.array(x[peak_index:peak_index+time_slice+1]) + 1e-7
+            log_y_data = np.log(y_data)
+            
+            # y = C * e^(rt) => C = e^curve_fit[1], r = e^curve_fit[0]
+            curve_fit = np.exp(np.polyfit(x_data, log_y_data, 1))
+            decay_ = curve_fit[0]
+            decayRates.append(decay_)
+    if len(riseRates) > 0:
+        riseRates = sum(riseRates)/len(riseRates)
+    else:
+        riseRates = 0 
+    if len(decayRates) > 0:
+        decayRates = sum(decayRates)/len(decayRates)
+    else:
+        decayRates = 0
+    return riseRates, decayRates
+    
 
 def save_signal_graph(aid, x, peaks):
     plt.plot(x)
@@ -112,12 +149,20 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
     active_col_map = {}
     npeaks_col_map = {}
     peak_dist_col_map = {}
+    aid_avg_rise_map = {}
+    aid_avg_decay_map = {}
     for aid in article_ids:
         tdf = tweet_df_map[aid]
         dr = get_date_range(tdf)
         signal_df = get_signal_dataframe(tdf, dr)
         x = signal_df.tweet_count.to_numpy()
         peaks = get_signal_peaks(aid, x, graph=True)
+        
+        # take in article_id, array of values and peaks in array
+        riseRates, decayRates = get_exp_rates(aid, peaks, x)
+        aid_avg_rise_map[aid] = riseRates
+        aid_avg_decay_map[aid] = decayRates
+        
         # Record the relevant features
         dr_col_map[aid] = len(dr) - 1   # Subtract extra day
         active_col_map[aid] = get_days_active(dr, signal_df)
@@ -137,6 +182,8 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
     article_df["num_peaks"] = article_df['id'].map(npeaks_col_map)
     article_df["active_ratio"] = article_df["active_days"] / article_df["lifespan"]
     article_df["avg_peak_dist"] = article_df['id'].map(peak_dist_col_map)
+    article_df["avg_rise_rate"] = article_df['id'].map(aid_avg_rise_map)
+    article_df["avg_decay_rate"] = article_df['id'].map(aid_avg_decay_map)
 
 
 def main():
