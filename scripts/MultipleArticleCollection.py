@@ -2,7 +2,7 @@ import json
 import requests
 
 article_ids = []
-with open(f"../data/2020_articles_secondhalf.csv", "r") as f:
+with open(f"../data/2020_11_6_articles_ids.csv", "r") as f:
     for aid in f.readlines():
         article_ids.append(int(aid.rstrip()))
 
