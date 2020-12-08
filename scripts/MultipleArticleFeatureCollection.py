@@ -86,14 +86,13 @@ def get_signal_peaks(aid, x, min_peak=50, graph=True):
         save_signal_graph(aid, x, peaks)
     return peaks
 
-# time_slice: amount of time between samples 
+# time_slice: amount of samples between peaks, decided in 
+# in get_signal_peaks()
 def get_exp_rates(aid, peaks, x, time_slice=7):
-    RISE, DECAY = 0, 1
     x_data = np.array(range(time_slice+1))
     riseRates = []
     decayRates = []
     for peak_index in peaks:
-        rises, decays = [], [] 
         if peak_index - time_slice >= 0:
             ## Add small epsilon.
             y_data = np.array(x[peak_index-time_slice:peak_index+1]) + 1e-7
@@ -122,6 +121,14 @@ def get_exp_rates(aid, peaks, x, time_slice=7):
         decayRates = 0
     return riseRates, decayRates
     
+
+def save_rates_graph(avg, decay_):
+    bursty_ = rise_ + decay_
+    plt.title("Burstiness vs time")
+    ## map aid to dates, dates vs rates bursty rate
+    ## is x in days or weeks? looks like days
+    plt.savefig("Burstiness (sum_approach) vs time.png")
+    plt.clf()
 
 def save_signal_graph(aid, x, peaks):
     plt.plot(x)
@@ -152,16 +159,18 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
     aid_avg_rise_map = {}
     aid_avg_decay_map = {}
     for aid in article_ids:
+        print("aid: ", aid)
         tdf = tweet_df_map[aid]
         dr = get_date_range(tdf)
         signal_df = get_signal_dataframe(tdf, dr)
         x = signal_df.tweet_count.to_numpy()
         peaks = get_signal_peaks(aid, x, graph=True)
-        
+        print("dr: ", dr)
         # take in article_id, array of values and peaks in array
-        riseRates, decayRates = get_exp_rates(aid, peaks, x)
-        aid_avg_rise_map[aid] = riseRates
-        aid_avg_decay_map[aid] = decayRates
+        riseRate, decayRate = get_exp_rates(aid, peaks, x)
+        aid_avg_rise_map[aid] = riseRate
+        aid_avg_decay_map[aid] = decayRate
+        print(riseRate, decayRate)
         
         # Record the relevant features
         dr_col_map[aid] = len(dr) - 1   # Subtract extra day
