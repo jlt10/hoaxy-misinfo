@@ -122,7 +122,7 @@ def get_exp_rates(aid, peaks, x, time_slice=7):
     return riseRates, decayRates
     
 
-def save_rates_graph(avg, decay_):
+def save_rates_graph(burstyMap):
     bursty_ = rise_ + decay_
     plt.title("Burstiness vs time")
     ## map aid to dates, dates vs rates bursty rate
@@ -158,26 +158,33 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
     peak_dist_col_map = {}
     aid_avg_rise_map = {}
     aid_avg_decay_map = {}
+    bursty_Map = defaultdict(list)
     for aid in article_ids:
         print("aid: ", aid)
         tdf = tweet_df_map[aid]
+        ## dr[0] is the first share date
         dr = get_date_range(tdf)
         signal_df = get_signal_dataframe(tdf, dr)
         x = signal_df.tweet_count.to_numpy()
         peaks = get_signal_peaks(aid, x, graph=True)
-        print("dr: ", dr)
+        print("first share date ", dr[0])
         # take in article_id, array of values and peaks in array
         riseRate, decayRate = get_exp_rates(aid, peaks, x)
         aid_avg_rise_map[aid] = riseRate
         aid_avg_decay_map[aid] = decayRate
+        bursty_Map[dr[0]].append(riseRate+decayRate)
         print(riseRate, decayRate)
+           
         
         # Record the relevant features
         dr_col_map[aid] = len(dr) - 1   # Subtract extra day
         active_col_map[aid] = get_days_active(dr, signal_df)
         npeaks_col_map[aid] = len(peaks)
         peak_dist_col_map[aid] = get_avg_peak_distance(peaks)
-        all_peaks.extend([(aid, dr[p], x[p]) for p in peaks])
+        all_peaks.extend([(aid, dr[p], x[sp]) for p in peaks])
+    # Draw and save bursty chart
+#     save_rates_graph(bursty_Map, )
+    
     # Save the collection of peaks found.
     all_peaks = np.transpose(all_peaks)
     pd.DataFrame({
