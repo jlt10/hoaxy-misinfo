@@ -80,39 +80,56 @@ article_network_df["date"] = article_network_df.created_at.apply(lambda dt: dt.d
 
 
 # peaks for all 2020 data
-# print(article_network_df.columns)
-# print(article_network_df.head)
-# print(article_network_df['date'].value_counts())
+claim_df = article_network_df.loc[article_network_df['site_type'] == 'claim']
+fact_df = article_network_df.loc[article_network_df['site_type'] == 'fact_checking']
 
-date_freq = article_network_df['date'].value_counts().sort_index()
-# print(date_freq.sort_index())
-# print(date_freq.shape)
-# print(date_freq[10])
-# print(date_freq.sort_values('date'))
+claim_date_freq = claim_df['date'].value_counts().sort_index()
+fact_date_freq = fact_df['date'].value_counts().sort_index()
 
-date_freq_np = date_freq.to_numpy()
-date_freq_dates = date_freq.index
-# print(date_freq_dates)
+claim_date_freq_np = claim_date_freq.to_numpy()
+claim_date_freq_dates = claim_date_freq.index
+fact_date_freq_np = fact_date_freq.to_numpy()
+fact_date_freq_dates = fact_date_freq.index
 
-# print(date_freq_np)
-#
-peaks, _ = find_peaks(date_freq_np, height=15000)
-# print(peaks)
+claim_peaks, _ = find_peaks(claim_date_freq_np, height=500, distance=7)
+fact_peaks, _ = find_peaks(fact_date_freq_np, height=150, distance=7)
 
-new_dates = []
 
-for i in range(len(date_freq_np)):
-    if i in peaks:
-        new_dates.append(str(date_freq_dates[i]))
+claim_new_dates = []
+fact_new_dates = []
+
+for i in range(len(claim_date_freq_np)):
+    if i in claim_peaks:
+        claim_new_dates.append(str(claim_date_freq_dates[i]))
     else:
-        new_dates.append('')
+        claim_new_dates.append('')
 
-plt.plot(date_freq_np)
-plt.plot(peaks, date_freq_np[peaks], "x")
-plt.plot(np.zeros_like(date_freq_np), "--", color="gray")
-plt.title("Peaks of Tweet Volume from All 2020 Articles")
-plt.xticks(np.arange(len(date_freq_dates)), new_dates, rotation='vertical', fontsize=5)
-plt.yticks(fontsize=5)
+plt.plot(claim_date_freq_np)
+plt.plot(claim_peaks, claim_date_freq_np[claim_peaks], "x")
+plt.plot(np.zeros_like(claim_date_freq_np), "--", color="gray")
+plt.title("Peaks of Tweet Volume from All 2020 Claim Articles")
 plt.xlabel("Time by Day")
+plt.xticks(np.arange(len(claim_date_freq_dates)), claim_new_dates, rotation='vertical', fontsize=5)
+plt.yticks(fontsize=5)
 plt.ylabel("Volume of Tweets")
-plt.savefig('../plots/agg_peaks_dates.pdf')
+plt.savefig('../plots/agg_peaks_dates_claim.pdf')
+plt.clf()
+
+
+for i in range(len(fact_date_freq_np)):
+    if i in fact_peaks:
+        fact_new_dates.append(str(fact_date_freq_dates[i]))
+    else:
+        fact_new_dates.append('')
+
+plt.plot(fact_date_freq_np)
+plt.plot(fact_peaks, fact_date_freq_np[fact_peaks], "x")
+plt.plot(np.zeros_like(fact_date_freq_np), "--", color="gray")
+plt.title("Peaks of Tweet Volume from All 2020 Fact-Checking Articles")
+plt.xticks(np.arange(len(fact_date_freq_dates)), fact_new_dates, rotation='vertical', fontsize=5)
+plt.yticks(fontsize=5)
+plt.xlabel("Time by Day", fontsize=12)
+plt.ylabel("Volume of Tweets")
+plt.ylim(0, 1000)
+plt.savefig('../plots/agg_peaks_dates_fact.pdf')
+plt.clf()
