@@ -40,7 +40,7 @@ plt.clf()
 
 ## Fact-checking
 plt.title("Fact-checking articles (id) vs burstiness")
-plt.scatter(claim_x, claim_y)
+plt.scatter(fact_x, fact_y)
 plt.savefig("Fact-checking articles (id) vs burstiness")
 plt.clf()
 
