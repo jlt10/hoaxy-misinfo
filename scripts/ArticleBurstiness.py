@@ -45,4 +45,10 @@ plt.savefig("Fact-checking articles (id) vs burstiness")
 plt.clf()
 
 
+## All articles
+plt.title("All articles (id) vs burstiness")
+plt.scatter(claim_x, claim_y, c='r')
+plt.scatter(fact_x, fact_y, c='g')
+plt.savefig("All articles (id) vs burstiness")
+plt.clf()
 
