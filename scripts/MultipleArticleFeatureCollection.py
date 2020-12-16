@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import date, datetime, timedelta
 import matplotlib.pyplot as plt
 from dateutil.relativedelta import relativedelta
+from MultipleNetworkCollection import collect_tweet_network
 from scipy.signal import find_peaks
 import pytz
 from collections import defaultdict
@@ -88,10 +89,10 @@ def get_signal_peaks(aid, x, min_peak=50, graph=True):
 
 # time_slice: amount of samples between peaks, decided in 
 # in get_signal_peaks()
-def get_exp_rates(date_bursty_map, peaks, signal_df, x, time_slice=7):
+def get_exp_rates(aid_bursty_map, peaks, signal_df, x, aid, time_slice=7):
     x_data = np.array(range(time_slice+1))
     for peak_index in peaks:
-        date = signal_df['date'][peak_index]
+#         date = signal_df['date'][peak_index]
         bursty_metric = 0
         if peak_index - time_slice >= 0:
             ## Add small epsilon.
@@ -112,24 +113,42 @@ def get_exp_rates(date_bursty_map, peaks, signal_df, x, time_slice=7):
             ## decay
             bursty_metric += curve_fit[0]
 #         print(date, bursty_metric)
-        date_bursty_map[date].append(bursty_metric)
-    return date_bursty_map     
+        aid_bursty_map[aid].append(bursty_metric)
+    return aid_bursty_map     
 
-def save_rates_graph(date_bursty_map):
-#     print(date_bursty_map)
-    plt.title("Burstiness vs time")
-    copy = {}
-    for date in date_bursty_map:
-        val = sum(date_bursty_map[date])/ len(date_bursty_map[date])
+def remove_n_outliers(n, arr):
+    arr.sort() 
+    return arr[-n:] 
+
+def save_rates_graph(aid_bursty_map):
+    fact_y, claim_y = [], []
+    for aid in aid_bursty_map:
+        val = sum(aid_bursty_map[aid])/ len(aid_bursty_map[aid])
         if val == 0 or val == 0.0:
             continue 
-        copy[date] = val
-    plt.scatter(range(len(copy)), list(copy.values()))
-    plt.xticks(range(len(copy)), list(copy.keys()), rotation='vertical', fontsize=5)
-
-    plt.savefig("Burstiness (Sum of rates of tweet popularity rise and decay) vs time.png")
+        article_network_df, _ = collect_tweet_network([aid])
+        if article_network_df['site_type'][0] == 'claim':
+            claim_y.append(val)
+        elif article_network_df['site_type'][0] == 'fact_checking':
+            fact_y.append(val)
+    ## Remove 3 outliers, these 3 heavily skew the graph to the extent that fact checking data is compressed to one line
+    claim_y = remove_n_outliers(3, claim_y) 
     plt.clf()
-    
+    fig, ax = plt.subplots()
+    plt.title(" Article Type vs Contrived metric of burstiness.")
+
+    boxplot_dict = {'Claim': claim_y, 'Fact Checking': fact_y}
+    ax.boxplot(boxplot_dict.values())
+    ax.set_xticklabels(boxplot_dict.keys())
+
+    plt.xlabel(" Article Type ")
+    plt.ylabel(" Contrived metric ")
+    plt.savefig("Spread of burstiness (Fano Factor)")
+    plt.clf()
+
+
+
+
 
 def save_signal_graph(aid, x, peaks):
     plt.plot(x)
@@ -157,7 +176,7 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
     active_col_map = {}
     npeaks_col_map = {}
     peak_dist_col_map = {}
-    date_bursty_map = defaultdict(list)
+    aid_bursty_map = defaultdict(list)
     for aid in article_ids:
         tdf = tweet_df_map[aid]
         ## dr[0] is the first share date
@@ -165,8 +184,8 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
         signal_df = get_signal_dataframe(tdf, dr)
         x = signal_df.tweet_count.to_numpy()
         peaks = get_signal_peaks(aid, x, graph=True)
-        # Map peak_dates to "burstiness".
-        date_bursty_map = get_exp_rates(date_bursty_map, peaks, signal_df, x) 
+        # Map articles to "burstiness".
+        aid_bursty_map = get_exp_rates(aid_bursty_map, peaks, signal_df, x, aid) 
         # Record the relevant features
         dr_col_map[aid] = len(dr) - 1   # Subtract extra day
         active_col_map[aid] = get_days_active(dr, signal_df)
@@ -174,7 +193,7 @@ def get_peak_features(article_ids, article_df, tweet_df_map):
         peak_dist_col_map[aid] = get_avg_peak_distance(peaks)
         all_peaks.extend([(aid, dr[p], x[p]) for p in peaks])
     # Draw and save bursty chart
-    save_rates_graph(date_bursty_map)
+    save_rates_graph(aid_bursty_map)
     
     # Save the collection of peaks found.
     all_peaks = np.transpose(all_peaks)
